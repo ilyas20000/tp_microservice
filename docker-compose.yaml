@@ -1,0 +1,93 @@
+version: "3"
+services:
+
+  postgres:
+    container_name: postgres
+    image: postgres:alpine
+    environment:
+      POSTGRES_USER: ilyas
+      POSTGRES_PASSWORD: ilyas
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres
+
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
+      PGADMIN_DEFAULT_PASSWORD: "admin"
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - "8081:80"
+    networks:
+      - postgres
+
+
+  eureka:
+    container_name: ilyas20/eureka
+    image: eureka:0.1
+    depends_on:
+      - postgres
+    ports:
+      - "8761:8761"
+    networks:
+      - spring
+
+  gateway:
+    container_name: ilyas20/gateway
+    image: gateway:0.1
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - eureka
+    ports:
+      - "8082:8082"
+    networks:
+      - spring
+  clients:
+    container_name: ilyas20/clients
+    image: clients:0.1
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - gateway
+    ports:
+      - "8083:8083"
+    networks:
+      - spring
+      - postgres
+
+  voitures:
+    container_name: ilyas20/voitures
+    image: voitures:0.1
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - gateway
+      - clients
+    ports:
+      - "8084:8084"
+    networks:
+      - spring
+      - postgres
+
+networks:
+  postgres:
+    driver: bridge
+  spring:
+    driver: bridge
+
+volumes:
+  postgres:
+  pgadmin:
